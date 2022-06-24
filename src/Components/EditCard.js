@@ -1,116 +1,35 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useParams, Link, useHistory } from "react-router-dom";
-import { readDeck, readCard, updateCard } from "../utils/api";
+import React, { useEffect, useState } from "react";
+import { Link, useRouteMatch } from "react-router-dom";
+import { readDeck } from "../utils/api";
 import CardForm from "./CardForm";
-
-// Component for edit card screen
-function EditCard() {
-  const mountedRef = useRef(false);
-  const { deckId, cardId } = useParams();
-  const history = useHistory();
-
-  const initialCardState = {
-    id: "",
-    front: "",
-    back: "",
-    deckId: "",
-  };
-    
-  const [deck, setDeck] = useState({
-    name: "loading...",
-    description: "",
-  });
-    
-  const [editCard, setEditCard] = useState(initialCardState);
+export default function EditCard() {
+  const [deck, setDeck] = useState({});
+  const { params, url } = useRouteMatch();
 
   useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    const abortController = new AbortController();
-    async function loadDeck() {
-      try {
-        const loadedDeck = await readDeck(deckId, abortController.signal);
-        if (mountedRef.current) {
-          setDeck(() => loadedDeck);
-        }
-      } catch (error) {
-        if (error.name !== "AbortError") {
-          throw error;
-        }
-      }
-    }
-
-    loadDeck();
-    return () => {
-      abortController.abort();
-    };
-  }, [deckId]);
-
-  useEffect(() => {
-    const abortController = new AbortController();
-    async function loadCard() {
-      try {
-        const loadedCard = await readCard(cardId, abortController.signal);
-        if (mountedRef.current) {
-          setEditCard(() => loadedCard);
-        }
-      } catch (error) {
-        if (error.name !== "AbortError") {
-          throw error;
-        }
-      }
-    }
-    loadCard();
-    return () => {
-      abortController.abort();
-    };
-  }, [cardId]);
-
-  const changeHandler = ({ target }) => {
-    setEditCard((currentState) => ({
-      ...currentState,
-      [target.name]: target.value,
-    }));
-  };
-
-  const submitHandler = async (event) => {
-    event.preventDefault();
-    await updateCard(editCard);
-    setEditCard(initialCardState);
-    history.push(`/decks/${deckId}`);
-  };
+    const ac = new AbortController();
+    readDeck(params.deckId, ac.signal).then((response) => {
+      setDeck(response);
+    });
+  }, [params.deckId, url]);
 
   return (
     <>
       <nav aria-label="breadcrumb">
         <ol className="breadcrumb">
           <li className="breadcrumb-item">
-            <Link to="/">
-              <i className="fas fa-home"></i> Home
-            </Link>
-          </li>
-          <li className="breadcrumb-item">
-            <Link to={`/decks/${deckId}`}>{deck.name}</Link>
+            <Link to="/">Home</Link>
           </li>
           <li className="breadcrumb-item active" aria-current="page">
-            Edit Card {cardId}
+            <Link to={`decks/${params.deckId}`}>{deck.name}</Link>
+          </li>
+          <li className="breadcrumb-item active" aria-current="page">
+            Edit Card
           </li>
         </ol>
       </nav>
-      <h1 className="text-center">Edit Card</h1>
-      <CardForm
-        changeHandler={changeHandler}
-        submitHandler={submitHandler}
-        newCardData={editCard}
-        deckId={deckId}
-      />
+      <h1>Edit Card</h1>
+      <CardForm url={url} params={params} />
     </>
   );
 }
-
-export default EditCard;
