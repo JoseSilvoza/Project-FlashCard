@@ -1,92 +1,81 @@
 import React, { useState } from "react";
 import { Link, useHistory } from "react-router-dom";
-import { createDeck } from "../utils/api/index";
+import { createDeck } from "../utils/api";
 
-function CreateDeck() {
+export default function CreateDeck() {
   const history = useHistory();
-
   const initialState = {
     name: "",
     description: "",
   };
-
-  const [newDeck, setNewDeck] = useState(initialState);
-  function ChangeHandler({ target }) {
-    setNewDeck({
-      ...newDeck,
+  const [data, setData] = useState({ ...initialState });
+  const changeHandler = ({ target }) => {
+    setData({
+      ...data,
       [target.name]: target.value,
     });
-  }
+  };
 
-  async function SubmitHandler(event) {
+  function submitHandler(event) {
     event.preventDefault();
-    const abortController = new AbortController();
-    const response = await createDeck({ ...newDeck }, abortController.signal);
-    history.push("/");
-    return response;
+    const ac = new AbortController();
+    let id = 0;
+
+    createDeck(data, ac.signal)
+      .then((response) => {
+        id = response.id;
+        history.push(`/decks/${id}`);
+      })
+      .catch((err) => console.log(err));
+    setData({ ...initialState });
   }
 
   return (
-    <div>
+    <>
       <nav aria-label="breadcrumb">
         <ol className="breadcrumb">
           <li className="breadcrumb-item">
-            <Link to="/">
-              <i className="fas fa-home"></i> Home
-            </Link>
+            <Link to="/">Home</Link>
           </li>
           <li className="breadcrumb-item active" aria-current="page">
             Create Deck
           </li>
         </ol>
       </nav>
-      <form onSubmit={SubmitHandler}>
-        <h1 className="my-4 text-center">Create Deck</h1>
+      <h1>Create Deck</h1>
+      <form onSubmit={submitHandler}>
         <div className="form-group">
           <label htmlFor="name">Name</label>
           <input
-            name="name"
-            id="name"
-            className="form-control form-control-lg"
             type="text"
+            className="form-control"
+            id="name"
+            name="name"
             placeholder="Deck Name"
-            onChange={ChangeHandler}
-            value={newDeck.name}
-            required
-          ></input>
+            onChange={changeHandler}
+            value={data.name}
+          />
         </div>
         <div className="form-group">
           <label htmlFor="description">Description</label>
           <textarea
             className="form-control"
             id="description"
-            name="description"
-            rows="5"
             placeholder="Brief description of the deck"
-            onChange={ChangeHandler}
-            value={newDeck.description}
-            required
-          ></textarea>
+            rows="4"
+            name="description"
+            onChange={changeHandler}
+            value={data.description}
+          />
         </div>
-        <Link to="/" className="mr-2">
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => history.push("/")}
-          >
-            Cancel
-          </button>
+        <Link to={"/"} className="btn btn-secondary mr-2">
+          Cancel
         </Link>
-              <button
-                  type="submit"
-                  className="btn btn-primary"
-                  onClick={SubmitHandler}
-              >
+
+        <button type="submit" className="btn btn-primary">
           Submit
         </button>
       </form>
-    </div>
+    </>
   );
 }
-
-export default CreateDeck;
